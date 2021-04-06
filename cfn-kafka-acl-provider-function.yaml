@@ -1,0 +1,169 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Description:
+  Template to create the Lambda function used by the Custom resource provider Custom::KafkaACL
+
+Metadata:
+  Maintainer: john@ews-network.net
+  Version: 2021-04-06
+  AWS::CloudFormation::Interface:
+    ParameterLabels:
+      FunctionRoleArn:
+        default: Existing IAM Role to use for the CFN Macro Lambda function
+      PermissionsBoundary:
+        default: When creating a new role, assigns permissions boundary IAM policy via ARN
+    ParameterGroups:
+      - Parameters:
+          - MemorySize
+        Label:
+          default: Lambda Settings
+      - Parameters:
+          - FunctionRoleArn
+          - PermissionsBoundary
+        Label:
+          default: IAM Settings
+      - Parameters:
+          - VpcId
+          - Subnets
+          - OverrideSecurityGroup
+        Label:
+          default: VPC Settings
+
+Parameters:
+  VpcId:
+    Type: String
+    Default: 'none'
+    AllowedPattern: 'none|vpc-[a-z0-9]+'
+
+  Subnets:
+    Type: CommaDelimitedList
+    Default: ''
+
+  OverrideSecurityGroup:
+    Type: String
+    Default: 'none'
+    AllowedPattern: 'none|sg-[a-z0-9]+'
+
+  PermissionsBoundary:
+    Type: String
+    Default: none
+    AllowedPattern: none|(arn:aws([a-z]+)?:iam::\d{12}:policy/\S+$)
+
+  FunctionRoleArn:
+    Type: String
+    AllowedPattern: none|(arn:aws([a-z]+)?:iam::\d{12}:role/\S+$)
+    Default: none
+
+  MemorySize:
+    Type: Number
+    MinValue: 128
+    Default: 128
+
+  SecretArn:
+    Type: String
+    AllowedPattern: none|arn:aws([a-z-]+)?:secretsmanager:[a-z0-9-]+:\d{12}:secret:[\S]+
+    Default: "none"
+
+  SecretKmsKeyArn:
+    Type: String
+    Default: none
+    AllowedPattern: none|arn:aws([a-z-]+)?:kms:[a-z0-9-]+:\d{12}:[\S]+
+
+Conditions:
+  DoNotAttachToVpc: !Equals [ !Ref VpcId, "none" ]
+  CreateLambdaSg: !And
+    - !Not [ !Condition DoNotAttachToVpc ]
+    - !Equals [ !Ref OverrideSecurityGroup, "none" ]
+  CreateRole: !Equals [ !Ref FunctionRoleArn, "none" ]
+  UseBoundary: !And
+    - !Not [!Equals [ !Ref PermissionsBoundary, "none" ]]
+    - !Condition CreateRole
+
+  SetSecretAccess: !Not
+    - !Equals [ !Ref SecretArn, "none" ]
+  SetSecretKeyAccess: !Not
+    - !Equals [ !Ref SecretKmsKeyArn, "none" ]
+
+Resources:
+  LambdaSg:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateLambdaSg
+    Properties:
+      GroupDescription: "SG for Custom ACL provider for Kafka"
+      VpcId: !If
+        - DoNotAttachToVpc
+        - !Ref AWS::NoValue
+        - !Ref VpcId
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Condition: CreateRole
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      PermissionsBoundary: !If
+        - UseBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Policies: !If
+        - SetSecretAccess
+        - - PolicyName: SecretAccess
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                - Sid: SecretAccess
+                  Effect: Allow
+                  Resource:
+                    - !Ref SecretArn
+                  Action:
+                    - secretsmanager:GetSecretValue
+                - !If
+                  - SetSecretKeyAccess
+                  - Sid: SecretKmsKeyAccess
+                    Effect: Allow
+                    Resource:
+                      - !Ref SecretKmsKeyArn
+                    Action:
+                      - kms:Decrypt
+                  - !Ref AWS::NoValue
+        - !Ref AWS::NoValue
+
+  CustomProviderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Custom CloudFormation Provider implementation
+      CodeUri: build/
+      Handler: ews_kafka_acl.custom_resource.lambda_handler
+      MemorySize: !Ref MemorySize
+      Timeout: 60
+      Role: !If
+        - CreateRole
+        - !GetAtt 'LambdaRole.Arn'
+        - !Ref FunctionRoleArn
+      Runtime: python3.7
+      VpcConfig: !If
+        - DoNotAttachToVpc
+        - !Ref 'AWS::NoValue'
+        - SecurityGroupIds:
+            - !If
+              - CreateLambdaSg
+              - !GetAtt "LambdaSg.GroupId"
+              - !Ref OverrideSecurityGroup
+          SubnetIds: !Ref 'Subnets'
+
+Outputs:
+  FunctionName:
+    Value: !Ref CustomProviderFunction
+  FunctionArn:
+    Value: !GetAtt CustomProviderFunction.Arn
