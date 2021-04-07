@@ -10,7 +10,7 @@
                 "Resource",
                 "Principal",
                 "ResourceType",
-                "Access",
+                "Action",
                 "Effect"
             ],
             "properties": {
@@ -24,10 +24,10 @@
                     "type": "string",
                     "pattern": "^[A-Z]+$",
                     "description": "Pattern type",
-                    "$comment": "LITERAL or PREFIX",
+                    "$comment": "LITERAL or PREFIXED",
                     "enum": [
                         "LITERAL",
-                        "PREFIX",
+                        "PREFIXED",
                         "MATCH"
                     ],
                     "default": "LITERAL"

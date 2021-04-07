@@ -139,10 +139,10 @@ Resources:
                   - !Ref AWS::NoValue
         - !Ref AWS::NoValue
 
-  CustomProviderFunction:
+  ACLProvider:
     Type: AWS::Serverless::Function
     Properties:
-      Description: Custom CloudFormation Provider implementation
+      Description: Custom CloudFormation Provider for Custom::KafkaACL
       CodeUri: build/
       Handler: ews_kafka_acl.custom_resource.lambda_handler
       MemorySize: !Ref MemorySize
@@ -164,6 +164,6 @@ Resources:
 
 Outputs:
   FunctionName:
-    Value: !Ref CustomProviderFunction
+    Value: !Ref ACLProvider
   FunctionArn:
-    Value: !GetAtt CustomProviderFunction.Arn
+    Value: !GetAtt ACLProvider.Arn
