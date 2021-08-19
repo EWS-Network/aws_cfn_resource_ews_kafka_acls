@@ -8,9 +8,10 @@ import uuid
 
 from aws_cfn_custom_resource_resolve_parser import handle
 from cfn_resource_provider import ResourceProvider
+from compose_x_common.compose_x_common import keyisset, keypresent
 
 from .acls_management import create_new_acls, delete_acls
-from .common import LOG, keyisset, keypresent, differentiate_old_new_acls
+from .common import LOG, differentiate_old_new_acls
 
 
 class KafkaACL(ResourceProvider):
@@ -19,7 +20,6 @@ class KafkaACL(ResourceProvider):
         Init method
         """
         self.cluster_info = {}
-        self.use_confluent = False
         super(KafkaACL, self).__init__()
         self.request_schema = {
             "definitions": {
@@ -145,7 +145,7 @@ class KafkaACL(ResourceProvider):
 
     def convert_property_types(self):
         int_props = []
-        boolean_props = ["IsConfluentKafka"]
+        boolean_props = []
         for prop in int_props:
             if keypresent(prop, self.properties) and isinstance(
                 self.properties[prop], str
@@ -171,11 +171,12 @@ class KafkaACL(ResourceProvider):
             self.fail(f"Failed to get cluster information - {str(error)}")
 
         for key, value in self.cluster_info.items():
-            if isinstance(value, str) and value.find("resolve:secretsmanager") >= 0:
+            if isinstance(value, str) and value.find(r"resolve:secretsmanager") >= 0:
                 print("Found a resolve secrets. Trying to resolve the value")
                 try:
                     self.cluster_info[key] = handle(value)
                 except Exception as error:
+                    LOG.error(error)
                     LOG.error("Failed to import secrets from SecretsManager")
                     self.fail(str(error))
 
@@ -185,13 +186,8 @@ class KafkaACL(ResourceProvider):
         :return:
         """
         self.define_cluster_info()
-        LOG.info(f"Attempting to create new topic {self.get('Name')}")
-        cluster_url = (
-            self.cluster_info["bootstrap.servers"]
-            if self.get("IsConfluentKafka")
-            else self.cluster_info["bootstrap_servers"]
-        )
-        LOG.info(f"Cluster is {cluster_url}")
+        LOG.info(f"Connecting to {self.cluster_info['bootstrap_servers']}")
+        LOG.info(f"Attempting to create new ACLs {self.get('Name')}")
         try:
             topic_name = create_new_acls(
                 self.get("Policies"),
@@ -222,13 +218,16 @@ class KafkaACL(ResourceProvider):
         try:
             delete_acls(acls[1], self.cluster_info)
         except Exception as error:
-            LOG.error("Failed to delete old ACLs")
+            LOG.error("Failed to delete old ACLs - Moving on")
             LOG.error(error)
             LOG.error(acls[1])
         try:
             create_new_acls(acls[0], self.cluster_info)
             self.success()
+            LOG.info("Successfully created new ACLs")
         except Exception as error:
+            LOG.error(error)
+            LOG.error("Failed to create new ACLs")
             self.fail(str(error))
 
     def delete(self):

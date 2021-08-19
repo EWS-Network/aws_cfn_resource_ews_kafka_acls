@@ -120,3 +120,5 @@ ENV/
 /src/LICENSE
 /src/README.rst
 /outputs/
+/requirements.txt
+/layer/

@@ -6,43 +6,8 @@
 
 import logging
 
-
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.INFO)
-
-
-def keyisset(x, y):
-    """
-    Macro to figure if the the dictionary contains a key and that the key is not empty
-
-    :param x: The key to check presence in the dictionary
-    :type x: str
-    :param y: The dictionary to check for
-    :type y: dict
-
-    :returns: True/False
-    :rtype: bool
-    """
-    if isinstance(y, dict) and x in y.keys() and y[x]:
-        return True
-    return False
-
-
-def keypresent(x, y):
-    """
-    Macro to figure if the the dictionary contains a key and that the key is not empty
-
-    :param x: The key to check presence in the dictionary
-    :type x: str
-    :param y: The dictionary to check for
-    :type y: dict
-
-    :returns: True/False
-    :rtype: bool
-    """
-    if isinstance(y, dict) and x in y.keys():
-        return True
-    return False
 
 
 def differentiate_old_new_acls(new_policies, old_policies):

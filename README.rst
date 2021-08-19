@@ -19,8 +19,8 @@ such as
       NewACL:
         Type: EWS::Kafka::ACL
         Properties:
-	BootstrapServers: str
-	Policies: [ Policy ]
+    BootstrapServers: str
+    Policies: [ Policy ]
 
 
 However, due to the fact that AWS hosts the functions which are used then to create the resources in their own account,
@@ -44,7 +44,7 @@ use it as follows:
         Properties:
           ServiceToken: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:kafka-acl-provider
           BootstrapServers: my-cluster-endpoint.internal
-	  Policies: [ Policy ]
+    Policies: [ Policy ]
 
 
 Features

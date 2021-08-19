@@ -1,0 +1,62 @@
+[tool.poetry]
+name = "ews_kafka_acl"
+version = "0.0.1"
+description = "AWS CFN Private/Custom resource to manage Kafka ACLs"
+authors = ["John Preston <john@ews-network.net>"]
+license = "MPL-2.0"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.7"
+kafka-python = "^2.0.2"
+cfn-resource-provider = "^1.0.7"
+importlib-metadata = "^4.6.4"
+typing-extensions = "^3.10.0"
+aws-cfn-custom-resource-resolve-parser = "^0.2.1"
+boto3 = "^1.18"
+compose-x-common = {extras = ["aws"], version = "^0.1.1"}
+
+[tool.poetry.dev-dependencies]
+black = "^21.7b0"
+isort = "^5.9.3"
+Sphinx = "^4.1.2"
+pre-commit = "^2.14.0"
+placebo = "^0.9.0"
+coverage = "^5.5"
+pytest = "^6.2.4"
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+known_first_party = "kelvin"
+
+[tool.coverage.report]
+exclude_lines = [
+  "if __name__ == '__main__'"
+]
+[tool.coverage.run]
+omit = [
+  "*/cli.py"
+]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -27,5 +27,4 @@ Resources:
                 Resource: "*"
 Outputs:
   ExecutionRoleArn:
-    Value:
-      Fn::GetAtt: ExecutionRole.Arn
+    Value: !GetAtt ExecutionRole.Arn

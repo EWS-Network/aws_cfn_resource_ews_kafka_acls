@@ -26,6 +26,10 @@ BROWSER := python -c "$$BROWSER_PYSCRIPT"
 ifndef BUCKET
 BUCKET	:= eu-west-1.files.ews-network.net
 endif
+ifndef PYTHON_VERSION
+PYTHON_VERSION	:= python38
+endif
+
 
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
@@ -79,17 +83,38 @@ servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
 conform	: ## Conform to a standard of coding syntax
-	black src/setup.py src/ews_kafka_acl tests
+	isort --profile black src
+	black src tests
+	find src -name "*.json" -type f  -exec sed -i '1s/^\xEF\xBB\xBF//' {} +
 
-dist: clean ## builds source and wheel package
-	cd src; python setup.py sdist
-	cd src; python setup.py bdist_wheel
-	ls -l src/dist
 
-package: dist ## Creates a py package of the sources
-	rm -rf build function.zip; mkdir build
-	pip install src/dist/ews_kafka_acl*.whl -t build/
-# 	cd build ; zip -qr9 ../function.zip *
+python39	: clean
+			test -d layer && rm -rf layer || mkdir layer
+			docker run -u $(shell bash -c 'id -u'):$(shell bash -c 'id -u') \
+			--rm -it -v $(PWD):/opt --entrypoint /bin/bash \
+			public.ecr.aws/compose-x/python:3.9 \
+			-c "pip install -r /opt/dist/*.whl -t /opt/layer"
+
+python38	: clean
+			test -d layer && rm -rf layer || mkdir layer
+			docker run -u $(shell bash -c 'id -u'):$(shell bash -c 'id -u') \
+			--rm -it -v $(PWD):/opt --entrypoint /bin/bash \
+			public.ecr.aws/compose-x/python:3.8 \
+			-c "pip install  /opt/dist/ews_kafka_acl*.whl -t /opt/layer"
+
+python37	: clean
+			test -d layer && rm -rf layer || mkdir layer
+			docker run -u $(shell bash -c 'id -u'):$(shell bash -c 'id -u') \
+			--rm -it -v $(PWD):/opt --entrypoint /bin/bash \
+			public.ecr.aws/compose-x/python:3.7 \
+			-c "ls dist ; pip install /opt/dist/*.whl -t /opt/layer"
+
+
+dist:		clean ## builds source and wheel package
+			poetry build
+
+package:	dist $(PYTHON_VERSION)
+
 
 upload:	package	## Packages and uploads the function code into AWS S3
 	aws cloudformation package \

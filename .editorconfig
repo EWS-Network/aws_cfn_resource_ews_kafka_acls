@@ -17,6 +17,10 @@ indent_size = 2
 [*.yaml]
 indent_size = 2
 
+[*.json]
+indent_size = 2
+
+
 [*.bat]
 indent_style = tab
 end_of_line = crlf

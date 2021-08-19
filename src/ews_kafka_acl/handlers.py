@@ -16,9 +16,9 @@ from cloudformation_cli_python_lib import (
     identifier_utils,
 )
 
-from .models import ResourceHandlerRequest, ResourceModel
 from .acls_management import create_new_acls, delete_acls
 from .common import differentiate_old_new_acls
+from .models import ResourceHandlerRequest, ResourceModel
 
 LOG = logging.getLogger(__name__)
 TYPE_NAME = "EWS::Kafka::Topic"
@@ -31,7 +31,6 @@ def get_cluster_config(model):
     """
 
     :param model:
-    :param bool use_confluent:
     :return:
     """
     cluster_config = {

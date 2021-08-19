@@ -7,12 +7,12 @@ Module to handle Kafka topics management.
 """
 
 from kafka.admin import (
-    KafkaAdminClient,
     ACL,
     ACLFilter,
     ACLOperation,
     ACLPermissionType,
     ACLResourcePatternType,
+    KafkaAdminClient,
     ResourcePattern,
     ResourcePatternFilter,
     ResourceType,

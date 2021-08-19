@@ -143,7 +143,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Description: Custom CloudFormation Provider for Custom::KafkaACL
-      CodeUri: build/
+      CodeUri: layer/
       Handler: ews_kafka_acl.custom_resource.lambda_handler
       MemorySize: !Ref MemorySize
       Timeout: 60
